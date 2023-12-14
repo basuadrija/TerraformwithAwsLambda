@@ -1,6 +1,22 @@
 
 provider "aws" {
   region = "ap-south-1"
+  access_key  = var.AWS_ACCESS_KEY_ID
+  secret_key  = var.AWS_SECRET_ACCESS_KEY
+}
+
+resource "aws_instance" "ec2" {
+  count                  = var.instance_count
+  ami                    = "ami-02a2af70a66af6dfb"  
+  instance_type          = "t2.micro"  # Update with your desired instance type
+  vpc_security_group_ids = [var.security_group_id]
+  subnet_id              = var.subnet_id
+  key_name               = var.key
+  tags = merge(var.default_ec2_tags,
+    {
+      Name = "${var.name}-${count.index + 1}"
+    }
+  )
 }
 
 resource "aws_iam_role" "lambda_role" {
@@ -92,8 +108,8 @@ resource "aws_lambda_function" "start_ec2_instance" {
 
 resource "aws_cloudwatch_event_rule" "stop_ec2_schedule" {
   name                = "stop_ec2_schedule"
-  description         = "Schedule to trigger Lambda to stop EC2 instances on Friday at 3.30 PM IST"
-  schedule_expression = "cron(0 17 ? * 6 *)"  # Adjust the cron expression to match the desired time in UTC
+  description         = "Schedule to trigger Lambda to stop EC2 instances on Friday at 10.30 PM IST"
+  schedule_expression = "cron(0 17 ? * 6 *)"  
 }
 
 resource "aws_cloudwatch_event_target" "stop_ec2_target" {
@@ -113,7 +129,7 @@ resource "aws_lambda_permission" "allow_cloudwatch_stop" {
 resource "aws_cloudwatch_event_rule" "start_ec2_schedule" {
   name                = "start_ec2_schedule"
   description         = "Schedule to trigger Lambda to start EC2 instances on Monday at 8 AM IST"
-  schedule_expression = "cron(30 2 ? * 2 *)"  # Adjust the cron expression to match the desired time in UTC
+  schedule_expression = "cron(30 2 ? * 2 *)" 
 }
 
 resource "aws_cloudwatch_event_target" "start_ec2_target" {
